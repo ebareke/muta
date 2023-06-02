@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Define variables
+input_file=""
+output_file=""
+
+# Parse command-line arguments
+while getopts ":i:o:" opt; do
+  case $opt in
+    i) input_file=$OPTARG ;;
+    o) output_file=$OPTARG ;;
+    \?) echo "Invalid option: -$OPTARG" >&2 ;;
+  esac
+done
+
+# Check if input and output files are provided
+if [ -z "$input_file" ] || [ -z "$output_file" ]; then
+  echo "Usage: IDX_mutationReportMaker -i input_file -o output_file"
+  exit 1
+fi
+
+# Step 1: Construct the header
+echo -e "Construct\tChange\tMappingReadCount" > "$output_file"
+
+# Step 2: Process 'Wild' entries
+grep "Wild" "$input_file" | awk -F"\t" -v OFS="\t" '{print "WildType","Reference",$3}' >> "$output_file"
+
+# Step 3: Process other entries
+tail -n+2 "$input_file" | awk -F"\t" -v OFS="\t" '{print $1,$1,$3}' | \
+    sed "s/Mutant\-Construct_WtAA\://g" | sed -e "s/\-MutatedAA//g" | \
+    sed -e "s/_CodonStartPosition//g" | sed -e "/^*/d" | awk -F":" -v OFS="\t" \
+    '{print $1,$2,$3,$4,$5}' | awk -F"\t" -v OFS="\t" '{print $1">"$2"-CodonStart:"$3,$1">"$2"-AAPos"($3+2)/3,$7}' | \
+    awk 'BEGIN{OFS="\t"}{
+    gsub(/AAA/,"K",$2); gsub(/AAC/,"N",$2); gsub(/AAG/,"K",$2); gsub(/AAT/,"N",$2);
+    gsub(/ACA/,"T",$2); gsub(/ACC/,"T",$2); gsub(/ACG/,"T",$2); gsub(/ACT/,"T",$2);
+    gsub(/AGA/,"R",$2); gsub(/AGC/,"S",$2); gsub(/AGG/,"R",$2); gsub(/AGT/,"S",$2);
+    gsub(/ATA/,"I",$2); gsub(/ATC/,"I",$2); gsub(/ATG/,"M",$2); gsub(/ATT/,"I",$2);
+    gsub(/CAA/,"Q",$2); gsub(/CAC/,"H",$2); gsub(/CAG/,"Q",$2); gsub(/CAT/,"H",$2);
+    gsub(/CCA/,"P",$2); gsub(/CCC/,"P",$2); gsub(/CCG/,"P",$2); gsub(/CCT/,"P",$2);
+    gsub(/CGA/,"R",$2); gsub(/CGC/,"R",$2); gsub(/CGG/,"R",$2); gsub(/CGT/,"R",$2);
+    gsub(/CTA/,"L",$2); gsub(/CTC/,"L",$2); gsub(/CTG/,"L",$2); gsub(/CTT/,"L",$2);
+    gsub(/GAA/,"E",$2); gsub(/GAC/,"D",$2); gsub(/GAG/,"E",$2); gsub(/GAT/,"D",$2);
+    gsub(/GCA/,"A",$2); gsub(/GCC/,"A",$2); gsub(/GCG/,"A",$2); gsub(/GCT/,"A",$2);
+    gsub(/GGA/,"G",$2); gsub(/GGC/,"G",$2); gsub(/GGG/,"G",$2); gsub(/GGT/,"G",$2);
+    gsub(/GTA/,"V",$2); gsub(/GTC/,"V",$2); gsub(/GTG/,"V",$2); gsub(/GTT/,"V",$2);
+    gsub(/TAA/,"*",$2); gsub(/TAC/,"Y",$2); gsub(/TAG/,"*",$2); gsub(/TAT/,"Y",$2);
+    gsub(/TCA/,"S",$2); gsub(/TCC/,"S",$2); gsub(/TCG/,"S",$2); gsub(/TCT/,"S",$2);
+    gsub(/TGA/,"*",$2); gsub(/TGC/,"C",$2); gsub(/TGG/,"W",$2); gsub(/TGT/,"C",$2);
+    gsub(/TTA/,"L",$2); gsub(/TTC/,"F",$2); gsub(/TTG/,"L",$2); gsub(/TTT/,"F",$2);
+    print $1, $2, $3
+}' >> "$output_file"
