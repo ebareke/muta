@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# Define variables
+input_file=""
+output_file=""
+
+# Parse command-line arguments
+while getopts ":i:o:" opt; do
+  case $opt in
+    i) input_file=$OPTARG ;;
+    o) output_file=$OPTARG ;;
+    \?) echo "Invalid option: -$OPTARG" >&2 ;;
+  esac
+done
+
+# Check if input and output files are provided
+if [ -z "$input_file" ] || [ -z "$output_file" ]; then
+  echo "Usage: IDX_readCntReportMaker -i input_file -o output_file"
+  exit 1
+fi
+
+# Step 1: Create output file with header
+echo -e "AApos\tMutation\tReadCount" > "$output_file"
+
+# Step 2: Process input file
+tail -n+2 "$input_file" | sed "s/Mutant-Construct_WtAA://g" | sed -e "s/-MutatedAA:/\t/" | sed -e "s/_CodonStartPosition:/\t/g" | awk -F"\t" -v OFS="\t" '{print $1,$2,$3,$5}' > tmp1.txt
+
+# Step 3: Perform substitutions and sort
+awk 'BEGIN{OFS="\t"}{
+    gsub(/AAA/,"K",$1); gsub(/AAC/,"N",$1); gsub(/AAG/,"K",$1); gsub(/AAT/,"N",$1);
+    gsub(/ACA/,"T",$1); gsub(/ACC/,"T",$1); gsub(/ACG/,"T",$1); gsub(/ACT/,"T",$1);
+    gsub(/AGA/,"R",$1); gsub(/AGC/,"S",$1); gsub(/AGG/,"R",$1); gsub(/AGT/,"S",$1);
+    gsub(/ATA/,"I",$1); gsub(/ATC/,"I",$1); gsub(/ATG/,"M",$1); gsub(/ATT/,"I",$1);
+    gsub(/CAA/,"Q",$1); gsub(/CAC/,"H",$1); gsub(/CAG/,"Q",$1); gsub(/CAT/,"H",$1);
+    gsub(/CCA/,"P",$1); gsub(/CCC/,"P",$1); gsub(/CCG/,"P",$1); gsub(/CCT/,"P",$1);
+    gsub(/CGA/,"R",$1); gsub(/CGC/,"R",$1); gsub(/CGG/,"R",$1); gsub(/CGT/,"R",$1);
+    gsub(/CTA/,"L",$1); gsub(/CTC/,"L",$1); gsub(/CTG/,"L",$1); gsub(/CTT/,"L",$1);
+    gsub(/GAA/,"E",$1); gsub(/GAC/,"D",$1); gsub(/GAG/,"E",$1); gsub(/GAT/,"D",$1);
+    gsub(/GCA/,"A",$1); gsub(/GCC/,"A",$1); gsub(/GCG/,"A",$1); gsub(/GCT/,"A",$1);
+    gsub(/GGA/,"G",$1); gsub(/GGC/,"G",$1); gsub(/GGG/,"G",$1); gsub(/GGT/,"G",$1);
+    gsub(/GTA/,"V",$1); gsub(/GTC/,"V",$1); gsub(/GTG/,"V",$1); gsub(/GTT/,"V",$1);
+    gsub(/TAA/,"*",$1); gsub(/TAC/,"Y",$1); gsub(/TAG/,"*",$1); gsub(/TAT/,"Y",$1);
+    gsub(/TCA/,"S",$1); gsub(/TCC/,"S",$1); gsub(/TCG/,"S",$1); gsub(/TCT/,"S",$1);
+    gsub(/TGA/,"*",$1); gsub(/TGC/,"C",$1); gsub(/TGG/,"W",$1); gsub(/TGT/,"C",$1);
+    gsub(/TTA/,"L",$1); gsub(/TTC/,"F",$1); gsub(/TTG/,"L",$1); gsub(/TTT/,"F",$1);
+    gsub(/AAA/,"K",$2); gsub(/AAC/,"N",$2); gsub(/AAG/,"K",$2); gsub(/AAT/,"N",$2);
+    gsub(/ACA/,"T",$2); gsub(/ACC/,"T",$2); gsub(/ACG/,"T",$2); gsub(/ACT/,"T",$2);
+    gsub(/AGA/,"R",$2); gsub(/AGC/,"S",$2); gsub(/AGG/,"R",$2); gsub(/AGT/,"S",$2);
+    gsub(/ATA/,"I",$2); gsub(/ATC/,"I",$2); gsub(/ATG/,"M",$2); gsub(/ATT/,"I",$2);
+    gsub(/CAA/,"Q",$2); gsub(/CAC/,"H",$2); gsub(/CAG/,"Q",$2); gsub(/CAT/,"H",$2);
+    gsub(/CCA/,"P",$2); gsub(/CCC/,"P",$2); gsub(/CCG/,"P",$2); gsub(/CCT/,"P",$2);
+    gsub(/CGA/,"R",$2); gsub(/CGC/,"R",$2); gsub(/CGG/,"R",$2); gsub(/CGT/,"R",$2);
+    gsub(/CTA/,"L",$2); gsub(/CTC/,"L",$2); gsub(/CTG/,"L",$2); gsub(/CTT/,"L",$2);
+    gsub(/GAA/,"E",$2); gsub(/GAC/,"D",$2); gsub(/GAG/,"E",$2); gsub(/GAT/,"D",$2);
+    gsub(/GCA/,"A",$2); gsub(/GCC/,"A",$2); gsub(/GCG/,"A",$2); gsub(/GCT/,"A",$2);
+    gsub(/GGA/,"G",$2); gsub(/GGC/,"G",$2); gsub(/GGG/,"G",$2); gsub(/GGT/,"G",$2);
+    gsub(/GTA/,"V",$2); gsub(/GTC/,"V",$2); gsub(/GTG/,"V",$2); gsub(/GTT/,"V",$2);
+    gsub(/TAA/,"*",$2); gsub(/TAC/,"Y",$2); gsub(/TAG/,"*",$2); gsub(/TAT/,"Y",$2);
+    gsub(/TCA/,"S",$2); gsub(/TCC/,"S",$2); gsub(/TCG/,"S",$2); gsub(/TCT/,"S",$2);
+    gsub(/TGA/,"*",$2); gsub(/TGC/,"C",$2); gsub(/TGG/,"W",$2); gsub(/TGT/,"C",$2);
+    gsub(/TTA/,"L",$2); gsub(/TTC/,"F",$2); gsub(/TTG/,"L",$2); gsub(/TTT/,"F",$2);
+    print $1, $2, $3, $4
+}' tmp1.txt | sort -t$'\t' -k1,1 -k2,2 -k3,3n -k4,4rn | awk '!seen[$1$2$3]++' | awk -F"\t" -v OFS="\t" '!($1=="0" || $2=="0")  {print (($3+2)/3-1), $1">"$2, $4}' | sort -t$'\t' -k1,1 | awk -F"\t" -v OFS="\t" '{print "AA"$1, $2, $3}' >> "$output_file"
+
+# Cleanup temporary files
+rm tmp1.txt
